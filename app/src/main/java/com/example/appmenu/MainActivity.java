@@ -20,7 +20,11 @@ import com.example.appmenu.model.Food;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private static FoodAdapter foodAdapter;
     private static ArrayList<Food> foodList = new ArrayList<>();
+    private static final String JSON_URL = "https://raw.githubusercontent.com/GabriellViictor/json-m2-mobile/main/menu_data.json"; // URL do arquivo JSON no GitHub
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,8 +49,8 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(foodAdapter);
 
         if (isOnline()) {
-            System.out.println("Device is online, loading mock data.");
-            loadMockData();
+            System.out.println("Device is online, loading data from GitHub.");
+            new FetchDataTask().execute(JSON_URL);
         } else {
             System.out.println("Device is offline, loading data from database.");
             loadDataFromDatabase();
@@ -61,15 +66,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    private void loadMockData() {
+    private void processJsonData(String json) {
         try {
-            InputStream is = getAssets().open("menu_data.json");
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-
-            String json = new String(buffer, "UTF-8");
             JSONArray jsonArray = new JSONArray(json);
 
             FoodDatabase db = FoodDatabase.getInstance(this);
@@ -91,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
                 new InsertFoodAsyncTask(foodDao).execute(food);
             }
 
-            System.out.println("Finished loading mock data. Updating adapter.");
+            System.out.println("Finished loading data. Updating adapter.");
             foodAdapter.notifyDataSetChanged();
         } catch (Exception e) {
             System.out.println("Error loading JSON: " + e.getMessage());
@@ -159,6 +157,37 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 System.out.println("No food items found in database.");
             }
+        }
+    }
+
+    private class FetchDataTask extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... strings) {
+            StringBuilder result = new StringBuilder();
+            try {
+                URL url = new URL(strings[0]);
+                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                try {
+                    InputStream in = urlConnection.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        result.append(line);
+                    }
+                } finally {
+                    urlConnection.disconnect();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return result.toString();
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            processJsonData(result);
         }
     }
 }
