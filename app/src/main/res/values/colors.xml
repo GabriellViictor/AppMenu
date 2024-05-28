@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color> <!-- Preto -->
+    <color name="white">#FFFFFFFF</color> <!-- Branco -->
+    <color name="red">#FFFF0000</color> <!-- Vermelho -->
+    <color name="light_gray">#FFE0E0E0</color> <!-- Cinza Claro -->
+</resources>
